@@ -1,0 +1,37 @@
+version: "3.4"
+
+
+services:
+  app:
+    image: "digital-psycho"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    command: >
+      sh -c "python3 manage.py makemigrations &&
+             python3 manage.py migrate &&
+             python3 manage.py collectstatic &&
+             python3 manage.py runserver 0.0.0.0:8000"
+    ports:
+      - '8000:8000'
+    volumes:
+      - .:/code
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - '16379:6379'
+
+  celery:
+    restart: always
+    build:
+      context: .
+    command: celery -A app worker -l info
+    volumes:
+      - .:/code
+    depends_on:
+      - redis
+      - app
